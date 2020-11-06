@@ -58,6 +58,26 @@ module Airrecord
         new(fields).tap { |record| record.save(options) }
       end
 
+      def insert_all(fields, options={})
+
+        body = if fields.class == Array
+                 fields.map{ |fields| { fields: fields } }.to_json
+               else
+                 { fields: fields }.to_json
+               end
+
+        response = client.connection.post("/v0/#{self.class.base_key}/#{client.escape(self.class.table_name)}", body, { 'Content-Type' => 'application/json' })
+        parsed_response = client.parse(response.body)
+
+        if response.success?
+          @id = parsed_response["id"]
+          self.created_at = parsed_response["createdTime"]
+          self.fields = parsed_response["fields"]
+        else
+          client.handle_error(response.status, parsed_response)
+        end
+      end
+
       def records(filter: nil, sort: nil, view: nil, offset: nil, paginate: true, fields: nil, max_records: nil, page_size: nil)
         options = {}
         options[:filterByFormula] = filter if filter
