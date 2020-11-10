@@ -58,7 +58,7 @@ module Airrecord
         new(fields).tap { |record| record.save(options) }
       end
 
-      def insert_all(fields, options={})
+      def insert_all(fields, options = {})
 
         body = if fields.class == Array
                  fields.map{ |fields| { fields: fields } }.to_json
@@ -66,7 +66,7 @@ module Airrecord
                  { fields: fields }.to_json
                end
 
-        response = client.connection.post("/v0/#{self.class.base_key}/#{client.escape(self.class.table_name)}", body, { 'Content-Type' => 'application/json' })
+        response = client.connection.post("/v0/#{base_key}/#{client.escape(table_name)}", body, { 'Content-Type' => 'application/json' })
         parsed_response = client.parse(response.body)
 
         if response.success?
