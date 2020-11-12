@@ -61,18 +61,19 @@ module Airrecord
       def insert_all(fields, options = {})
 
         body = if fields.class == Array
-                 { "records": fields.map{ |fields| { fields: fields } } }.to_json
+                 { "records": fields.map { |fields| { fields: fields } } }.to_json
                else
-                 { "records": [{ fields: fields }] }.to_json
+                 { fields: fields }.to_json
                end
 
         response = client.connection.post("/v0/#{base_key}/#{client.escape(table_name)}", body, { 'Content-Type' => 'application/json' })
         parsed_response = client.parse(response.body)
 
         if response.success?
-          @id = parsed_response["id"]
-          self.created_at = parsed_response["createdTime"]
-          self.fields = parsed_response["fields"]
+          records = parsed_response['records']
+          records.map do |record|
+            new(record['fields'], id: record['id'], created_at: record['createdTime'])
+          end
         else
           client.handle_error(response.status, parsed_response)
         end
