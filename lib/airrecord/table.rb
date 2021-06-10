@@ -79,6 +79,40 @@ module Airrecord
         end
       end
 
+      def destroy_all(records)
+        return [] if records.length == 0
+        conn = client.connection
+        response = client.connection.delete(
+          conn.build_url("/v0/#{base_key}/#{client.escape(table_name)}", "records" => records)
+        )
+        parsed_response = client.parse(response.body)
+        if response.success?
+          parsed_response['records']
+        else
+          client.handle_error(response.status, parsed_response)
+        end
+      end
+
+      def update_all(records)
+        return [] if records.length == 0
+        records.each do |record|
+          raise Airrecord::Error.new 'Invalid record.' unless record.key?('id') and record.key?('fields')
+        end
+        response = client.connection.patch(
+          "/v0/#{base_key}/#{client.escape(table_name)}",
+          { 'records' => records }.to_json,
+          { 'Content-Type' => 'application/json' }
+        )
+        parsed_response = client.parse(response.body)
+        if response.success?
+          parsed_response['records'].map do |record|
+            new(record['fields'], id: record['id'], created_at: record['createdTime'])
+          end
+        else
+          client.handle_error(response.status, parsed_response)
+        end
+      end
+
       def records(filter: nil, sort: nil, view: nil, offset: nil, paginate: true, fields: nil, max_records: nil, page_size: nil)
         options = {}
         options[:filterByFormula] = filter if filter
